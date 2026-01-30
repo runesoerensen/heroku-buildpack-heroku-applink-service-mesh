@@ -97,3 +97,41 @@ install_applink_binary() {
 
     echo "       Done!"
 }
+
+validate_procfile() {
+    local app_dir="$1"
+
+    echo "-----> Validating Procfile configuration..."
+    if [ -f "${app_dir}/Procfile" ]; then
+        local web_command
+        web_command=$(grep "^web:" "${app_dir}/Procfile" | sed 's/^web: //' || echo "")
+        if [ -z "$web_command" ]; then
+            echo " !     Procfile missing web process"
+            echo " !     Add the following to your Procfile:"
+            echo " !     web: ${APPLINK_WELL_KNOWN_BINARY_NAME} <your app startup command>"
+        else
+            # Check if web command contains the binary name
+            if [[ "$web_command" =~ (^|[[:space:]])${APPLINK_WELL_KNOWN_BINARY_NAME}([[:space:]]|$) ]]; then
+                # Web command uses the well-known binary name correctly
+                echo "       Web process uses ${APPLINK_WELL_KNOWN_BINARY_NAME}"
+            elif [[ "$web_command" == *"${APPLINK_WELL_KNOWN_BINARY_NAME}-"* ]]; then
+                # Web command uses a versioned variant - extract the actual binary name used
+                local versioned_binary
+                versioned_binary=$(echo "$web_command" | grep -o "${APPLINK_WELL_KNOWN_BINARY_NAME}-[^ ]*" | head -n1)
+                local updated_command="${web_command//${versioned_binary}/${APPLINK_WELL_KNOWN_BINARY_NAME}}"
+                echo " !     Web process uses deprecated binary name: ${versioned_binary}"
+                echo " !     Update your Procfile to use ${APPLINK_WELL_KNOWN_BINARY_NAME}:"
+                echo " !     web: ${updated_command}"
+            else
+                # Web command doesn't contain the binary name at all
+                echo " !     Web process missing ${APPLINK_WELL_KNOWN_BINARY_NAME}"
+                echo " !     Update your Procfile to use ${APPLINK_WELL_KNOWN_BINARY_NAME}:"
+                echo " !     web: ${APPLINK_WELL_KNOWN_BINARY_NAME} ${web_command}"
+            fi
+        fi
+    else
+        echo " !     Procfile not found"
+        echo " !     Create a Procfile with the following:"
+        echo " !     web: ${APPLINK_WELL_KNOWN_BINARY_NAME} <your app startup command>"
+    fi
+}
