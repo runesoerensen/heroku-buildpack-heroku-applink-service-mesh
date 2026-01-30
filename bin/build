@@ -65,14 +65,12 @@ cache = true
 etag = "${CURRENT_ETAG}"
 EOL
 
-
-# Read web process from Procfile
-echo "-----> Reading web process from Procfile..."
+echo "-----> Validating Procfile configuration..."
 if [ -f "${APP_DIR}/Procfile" ]; then
     WEB_COMMAND=$(grep "^web:" "${APP_DIR}/Procfile" | sed 's/^web: //' || echo "")
     if [ -z "$WEB_COMMAND" ]; then
-        echo " !     No web process found in Procfile"
-        echo " !     Please add the following to your Procfile:"
+        echo " !     Procfile missing web process"
+        echo " !     Add the following to your Procfile:"
         echo " !     web: ${APPLINK_WELL_KNOWN_BINARY_NAME} <your app startup command>"
     else
         # Check if web command contains the binary name
@@ -83,19 +81,19 @@ if [ -f "${APP_DIR}/Procfile" ]; then
             # Web command uses a versioned variant - extract the actual binary name used
             versioned_binary=$(echo "$WEB_COMMAND" | grep -o "${APPLINK_WELL_KNOWN_BINARY_NAME}-[^ ]*" | head -n1)
             updated_command="${WEB_COMMAND//${versioned_binary}/${APPLINK_WELL_KNOWN_BINARY_NAME}}"
-            echo " !     Web process uses a versioned binary name: ${versioned_binary}"
-            echo " !     This is deprecated. Please update your Procfile to:"
+            echo " !     Web process uses deprecated binary name: ${versioned_binary}"
+            echo " !     Update your Procfile to use ${APPLINK_WELL_KNOWN_BINARY_NAME}:"
             echo " !     web: ${updated_command}"
         else
             # Web command doesn't contain the binary name at all
-            echo " !     Web process doesn't contain the ${APPLINK_WELL_KNOWN_BINARY_NAME} binary name"
-            echo " !     Please configure '${APPLINK_WELL_KNOWN_BINARY_NAME}' to start your web app, e.g.:"
+            echo " !     Web process missing ${APPLINK_WELL_KNOWN_BINARY_NAME}"
+            echo " !     Update your Procfile to use ${APPLINK_WELL_KNOWN_BINARY_NAME}:"
             echo " !     web: ${APPLINK_WELL_KNOWN_BINARY_NAME} ${WEB_COMMAND}"
         fi
     fi
 else
-    echo " !     Procfile not found at ${APP_DIR}/Procfile"
-    echo " !     Please add the following to your Procfile:"
+    echo " !     Procfile not found"
+    echo " !     Create a Procfile with the following:"
     echo " !     web: ${APPLINK_WELL_KNOWN_BINARY_NAME} <your app startup command>"
 fi
 
